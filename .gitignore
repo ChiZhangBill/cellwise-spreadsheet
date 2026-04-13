@@ -1,0 +1,8 @@
+dist
+node_modules
+.env
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+vite-dev*.log
+api-server*.log

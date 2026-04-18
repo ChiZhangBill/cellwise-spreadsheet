@@ -824,6 +824,27 @@ h2 {
   border: 1px solid #d6e4df;
   border-radius: 12px;
   background: #f9fdfb;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for refinement options */
+.refinement-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.refinement-options::-webkit-scrollbar-track {
+  background: #f0f4f2;
+  border-radius: 4px;
+}
+
+.refinement-options::-webkit-scrollbar-thumb {
+  background: #b4c5be;
+  border-radius: 4px;
+}
+
+.refinement-options::-webkit-scrollbar-thumb:hover {
+  background: #9cb3aa;
 }
 
 .refinement-header {

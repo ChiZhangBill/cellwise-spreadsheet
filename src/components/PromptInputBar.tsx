@@ -36,7 +36,12 @@ export function PromptInputBar({
     setRefinementError(null);
   };
 
-  const handleRefinePrompt = async () => {
+  const handleRefinePrompt = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       return;
@@ -72,8 +77,6 @@ export function PromptInputBar({
 
   return (
     <form className="prompt-input-bar" onSubmit={handleSubmit}>
-      <label htmlFor="assistant-prompt">Ask about this sheet</label>
-
       {refinementError && (
         <div className="refinement-error" role="alert">
           <p>{refinementError}</p>
@@ -99,7 +102,10 @@ export function PromptInputBar({
                   <button
                     className="btn-accept"
                     disabled={disabled}
-                    onClick={() => handleAcceptRefinement(refinement.refinedPrompt)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleAcceptRefinement(refinement.refinedPrompt);
+                    }}
                     type="button"
                   >
                     ✓ Accept
@@ -107,7 +113,10 @@ export function PromptInputBar({
                   <button
                     className="btn-edit"
                     disabled={disabled}
-                    onClick={() => handleSelectRefinement(refinement.refinedPrompt)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSelectRefinement(refinement.refinedPrompt);
+                    }}
                     type="button"
                   >
                     ✎ Edit
@@ -119,7 +128,10 @@ export function PromptInputBar({
 
           <button
             className="btn-close-options"
-            onClick={() => setRefinements([])}
+            onClick={(e) => {
+              e.preventDefault();
+              setRefinements([]);
+            }}
             type="button"
           >
             Close
@@ -132,7 +144,15 @@ export function PromptInputBar({
           disabled={disabled || isRefining}
           id="assistant-prompt"
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Ask about revenue, EBITDA margin, multiples, filters..."
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              if (prompt.trim()) {
+                handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
+              }
+            }
+          }}
+          placeholder="Ask about revenue, EBITDA margin, multiples, filters... (Enter to send, Shift+Enter for new line)"
           rows={3}
           value={prompt}
         />
@@ -141,7 +161,10 @@ export function PromptInputBar({
             <button
               className="btn-refine"
               disabled={disabled || isRefining || !prompt.trim()}
-              onClick={handleRefinePrompt}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRefinePrompt(e);
+              }}
               type="button"
             >
               {isRefining ? "Refining..." : "Refinement"}

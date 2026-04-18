@@ -1,41 +1,28 @@
-import type { AssistantMessage, PendingAction } from "../../types";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import type { AssistantMessage, PendingAction, WarningCategory } from "../../types";
 import { AnalysisTransparency } from "./AnalysisTransparency";
 import { WarningFlagList } from "./WarningFlagList";
 
 type MessageCardProps = {
-  activeWarningId: string | null;
-  dismissedWarningIds: string[];
   message: AssistantMessage;
   onConfirmAction: (action: PendingAction) => void;
-  onDismissWarning: (warningId: string) => void;
-  onSelectWarning: (warningId: string) => void;
 };
 
-export function MessageCard({
-  activeWarningId,
-  dismissedWarningIds,
-  message,
-  onConfirmAction,
-  onDismissWarning,
-  onSelectWarning,
-}: MessageCardProps) {
-  const isHighlighted =
-    Boolean(activeWarningId) && message.anomalyFlags?.some((flag) => flag.id === activeWarningId);
+export function MessageCard({ message, onConfirmAction }: MessageCardProps) {
+  const [activeFlagId, setActiveFlagId] = useState<string | undefined>();
+  const activeFlag = message.anomalyFlags?.find((flag) => flag.id === activeFlagId);
 
   return (
-    <article
-      className={`message-card ${message.role} ${message.kind} ${isHighlighted ? "highlighted-result" : ""}`}
-    >
+    <article className={`message-card ${message.role} ${message.kind}`}>
       <span className="message-label">{message.role === "assistant" ? "Assistant" : "You"}</span>
-      <p>{message.text}</p>
+      <p>{renderHighlightedText(message.text, activeFlag?.excerpt, activeFlag?.category)}</p>
 
-      {message.anomalyFlags && (
+      {message.anomalyFlags && message.anomalyFlags.length > 0 && (
         <WarningFlagList
-          activeWarningId={activeWarningId}
-          dismissedWarningIds={dismissedWarningIds}
+          activeFlagId={activeFlagId}
           flags={message.anomalyFlags}
-          onDismiss={onDismissWarning}
-          onSelect={onSelectWarning}
+          onSelectFlag={(flagId) => setActiveFlagId((current) => (current === flagId ? undefined : flagId))}
         />
       )}
 
@@ -55,4 +42,26 @@ export function MessageCard({
       )}
     </article>
   );
+}
+
+function renderHighlightedText(text: string, excerpt?: string, category?: WarningCategory) {
+  if (!excerpt || !text.includes(excerpt)) {
+    return text;
+  }
+
+  const segments = text.split(excerpt);
+
+  return segments.flatMap<ReactNode>((segment, index) => {
+    const nodes: ReactNode[] = [segment];
+
+    if (index < segments.length - 1) {
+      nodes.push(
+        <mark className={`inline-highlight category-${category ?? "uncertainty"}`} key={`${excerpt}-${index}`}>
+          {excerpt}
+        </mark>,
+      );
+    }
+
+    return nodes;
+  });
 }

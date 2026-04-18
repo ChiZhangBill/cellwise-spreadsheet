@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { AssistantMessage, AssistantSettings, PendingAction } from "../types";
 import { AssistantSettingsControls } from "./assistant/AssistantSettingsControls";
 import { AssistantStatus } from "./assistant/AssistantStatus";
@@ -26,16 +25,6 @@ export function RightAssistantPanel({
   onSubmitPrompt,
   settings,
 }: RightAssistantPanelProps) {
-  const [dismissedWarningIds, setDismissedWarningIds] = useState<string[]>([]);
-  const [activeWarningId, setActiveWarningId] = useState<string | null>(null);
-
-  const handleDismissWarning = (warningId: string) => {
-    setDismissedWarningIds((current) => [...current, warningId]);
-    if (activeWarningId === warningId) {
-      setActiveWarningId(null);
-    }
-  };
-
   return (
     <aside className="assistant-panel" aria-label="AI assistant panel">
       <div className="assistant-header">
@@ -48,15 +37,7 @@ export function RightAssistantPanel({
 
       <div className="assistant-thread" aria-live="polite">
         {messages.map((message) => (
-          <MessageCard
-            activeWarningId={activeWarningId}
-            dismissedWarningIds={dismissedWarningIds}
-            key={message.id}
-            message={message}
-            onConfirmAction={onConfirmAction}
-            onDismissWarning={handleDismissWarning}
-            onSelectWarning={setActiveWarningId}
-          />
+          <MessageCard key={message.id} message={message} onConfirmAction={onConfirmAction} />
         ))}
 
         <AssistantStatus

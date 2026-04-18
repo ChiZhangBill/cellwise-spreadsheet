@@ -44,9 +44,8 @@ export function RightAssistantPanel({
           <p className="eyebrow">AI Assistant</p>
           <h2>AI Financial Assistant</h2>
         </div>
+        <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
       </div>
-
-      <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
 
       <div className="suggestion-strip" aria-label="Prompt suggestions">
         {promptSuggestions.map((suggestion) => (

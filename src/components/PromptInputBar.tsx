@@ -15,11 +15,8 @@ export function PromptInputBar({
 }: PromptInputBarProps) {
   const [prompt, setPrompt] = useState("");
   const [isRefining, setIsRefining] = useState(false);
-  const [refinement, setRefinement] = useState<PromptRefinement | null>(null);
-  const [refinementAttempt, setRefinementAttempt] = useState(0);
+  const [refinements, setRefinements] = useState<PromptRefinement[]>([]);
   const [refinementError, setRefinementError] = useState<string | null>(null);
-  const [reviewedPrompt, setReviewedPrompt] = useState<string | null>(null);
-  const [showRefinementConfirm, setShowRefinementConfirm] = useState(false);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,41 +26,34 @@ export function PromptInputBar({
       return;
     }
 
-    if (promptRefinementEnabled && reviewedPrompt !== trimmedPrompt) {
-      setRefinement(null);
-      setRefinementError(null);
-      setShowRefinementConfirm(true);
-      return;
-    }
-
     submitPrompt(trimmedPrompt);
   };
 
   const submitPrompt = (nextPrompt: string) => {
     onSubmit(nextPrompt);
     setPrompt("");
-    setRefinement(null);
+    setRefinements([]);
     setRefinementError(null);
-    setRefinementAttempt(0);
-    setReviewedPrompt(null);
-    setShowRefinementConfirm(false);
   };
 
-  const handleRefinePrompt = async (attempt = refinementAttempt) => {
+  const handleRefinePrompt = async () => {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       return;
     }
 
-    setShowRefinementConfirm(false);
     setIsRefining(true);
     setRefinementError(null);
+    setRefinements([]);
 
     try {
-      const nextRefinement = await refinePrompt(trimmedPrompt, attempt);
-      setRefinement(nextRefinement);
-      setRefinementAttempt(attempt);
-      setReviewedPrompt(trimmedPrompt);
+      // Generate 3 refinement options
+      const options = await Promise.all([
+        refinePrompt(trimmedPrompt, 0),
+        refinePrompt(trimmedPrompt, 1),
+        refinePrompt(trimmedPrompt, 2),
+      ]);
+      setRefinements(options);
     } catch {
       setRefinementError("Prompt refinement is unavailable right now. You can still submit the original prompt.");
     } finally {
@@ -71,73 +61,69 @@ export function PromptInputBar({
     }
   };
 
-  const handleRegenerate = () => {
-    const nextAttempt = refinementAttempt + 1;
-    setRefinementAttempt(nextAttempt);
-    void handleRefinePrompt(nextAttempt);
+  const handleSelectRefinement = (refinedPrompt: string) => {
+    setPrompt(refinedPrompt);
+    setRefinements([]);
+  };
+
+  const handleAcceptRefinement = (refinedPrompt: string) => {
+    submitPrompt(refinedPrompt);
   };
 
   return (
     <form className="prompt-input-bar" onSubmit={handleSubmit}>
       <label htmlFor="assistant-prompt">Ask about this sheet</label>
-      {showRefinementConfirm && (
-        <div className="refinement-confirm">
-          <p>Optimize prompt using plug-in LLM?</p>
-          <div>
-            <button disabled={disabled || isRefining} onClick={() => void handleRefinePrompt()} type="button">
-              Yes, suggest refinement
-            </button>
-            <button disabled={disabled || isRefining} onClick={() => submitPrompt(prompt.trim())} type="button">
-              No, submit original
-            </button>
-          </div>
-        </div>
-      )}
 
       {refinementError && (
         <div className="refinement-error" role="alert">
           <p>{refinementError}</p>
-          <button disabled={disabled || isRefining} onClick={() => submitPrompt(prompt.trim())} type="button">
-            Submit original
-          </button>
         </div>
       )}
 
-      {refinement && (
-        <div className="refinement-card">
-          <span>Refined prompt suggestion</span>
-          <p>{refinement.refinedPrompt}</p>
-          <small>{refinement.rationale}</small>
-          <div>
-            <button
-              disabled={disabled || isRefining}
-              onClick={() => {
-                setPrompt(refinement.refinedPrompt);
-                setReviewedPrompt(refinement.refinedPrompt);
-                setRefinement(null);
-                setRefinementError(null);
-                setShowRefinementConfirm(false);
-              }}
-              type="button"
-            >
-              Replace original prompt
-            </button>
-            <button disabled={disabled || isRefining} onClick={handleRegenerate} type="button">
-              Regenerate
-            </button>
-            <button
-              disabled={disabled || isRefining}
-              onClick={() => {
-                setReviewedPrompt(prompt.trim());
-                setRefinement(null);
-                setRefinementError(null);
-                setShowRefinementConfirm(false);
-              }}
-              type="button"
-            >
-              Ignore
-            </button>
+      {refinements.length > 0 && (
+        <div className="refinement-options">
+          <div className="refinement-header">
+            <span className="refinement-label">Original:</span>
+            <p className="refinement-original">{refinements[0].originalPrompt}</p>
           </div>
+
+          <div className="refinement-choices">
+            {refinements.map((refinement, index) => (
+              <div key={index} className="refinement-option">
+                <div className="refinement-option-content">
+                  <span className="refinement-option-number">Option {index + 1}</span>
+                  <p className="refinement-refined">{refinement.refinedPrompt}</p>
+                  <p className="refinement-rationale">{refinement.rationale}</p>
+                </div>
+                <div className="refinement-option-actions">
+                  <button
+                    className="btn-accept"
+                    disabled={disabled}
+                    onClick={() => handleAcceptRefinement(refinement.refinedPrompt)}
+                    type="button"
+                  >
+                    ✓ Accept
+                  </button>
+                  <button
+                    className="btn-edit"
+                    disabled={disabled}
+                    onClick={() => handleSelectRefinement(refinement.refinedPrompt)}
+                    type="button"
+                  >
+                    ✎ Edit
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="btn-close-options"
+            onClick={() => setRefinements([])}
+            type="button"
+          >
+            Close
+          </button>
         </div>
       )}
 
@@ -145,17 +131,30 @@ export function PromptInputBar({
         <textarea
           disabled={disabled || isRefining}
           id="assistant-prompt"
-          onChange={(event) => {
-            setPrompt(event.target.value);
-            setShowRefinementConfirm(false);
-          }}
+          onChange={(event) => setPrompt(event.target.value)}
           placeholder="Ask about revenue, EBITDA margin, multiples, filters..."
           rows={3}
           value={prompt}
         />
-        <button disabled={disabled || isRefining || !prompt.trim()} type="submit">
-          {isRefining ? "Refining" : "Send"}
-        </button>
+        <div className="prompt-buttons">
+          {promptRefinementEnabled && (
+            <button
+              className="btn-refine"
+              disabled={disabled || isRefining || !prompt.trim()}
+              onClick={handleRefinePrompt}
+              type="button"
+            >
+              {isRefining ? "Refining..." : "Refinement"}
+            </button>
+          )}
+          <button 
+            className="btn-send"
+            disabled={disabled || isRefining || !prompt.trim()} 
+            type="submit"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </form>
   );

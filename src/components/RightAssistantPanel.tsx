@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { promptSuggestions } from "../data/mockAssistantData";
 import type { AssistantMessage, AssistantSettings, PendingAction } from "../types";
 import { AssistantSettingsControls } from "./assistant/AssistantSettingsControls";
 import { AssistantStatus } from "./assistant/AssistantStatus";
@@ -46,6 +47,19 @@ export function RightAssistantPanel({
       </div>
 
       <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
+
+      <div className="suggestion-strip" aria-label="Prompt suggestions">
+        {promptSuggestions.map((suggestion) => (
+          <button
+            disabled={isThinking}
+            key={suggestion}
+            onClick={() => onSubmitPrompt(suggestion)}
+            type="button"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
 
       <div className="assistant-thread" aria-live="polite">
         {messages.map((message) => (

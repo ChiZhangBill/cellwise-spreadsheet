@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { promptSuggestions } from "../data/mockAssistantData";
 import type { AssistantMessage, AssistantSettings, PendingAction } from "../types";
 import { AssistantSettingsControls } from "./assistant/AssistantSettingsControls";
 import { AssistantStatus } from "./assistant/AssistantStatus";
@@ -43,27 +42,10 @@ export function RightAssistantPanel({
         <div>
           <p className="eyebrow">AI Assistant</p>
           <h2>AI Financial Assistant</h2>
-          <p className="assistant-helper">
-            Ask for analysis, proposed filters, or formula checks. Important changes stay pending until you confirm.
-          </p>
         </div>
-        <span className="assistant-state">Mock mode</span>
       </div>
 
       <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
-
-      <div className="suggestion-strip" aria-label="Prompt suggestions">
-        {promptSuggestions.map((suggestion) => (
-          <button
-            disabled={isThinking}
-            key={suggestion}
-            onClick={() => onSubmitPrompt(suggestion)}
-            type="button"
-          >
-            {suggestion}
-          </button>
-        ))}
-      </div>
 
       <div className="assistant-thread" aria-live="polite">
         {messages.map((message) => (

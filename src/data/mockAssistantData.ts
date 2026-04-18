@@ -20,10 +20,3 @@ export const initialAssistantMessages: AssistantMessage[] = [
     },
   },
 ];
-
-export const promptSuggestions = [
-  "Filter healthcare IT companies",
-  "Calculate EV/EBITDA multiples",
-  "Find revenue outliers",
-  "What is the average EBITDA margin?",
-];

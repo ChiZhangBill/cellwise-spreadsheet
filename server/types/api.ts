@@ -1,4 +1,5 @@
 export type WarningLevel = "low" | "medium" | "high";
+export type WarningCategory = "assumption" | "limitation" | "uncertainty" | "recommendation";
 
 export type SheetSnapshot = {
   cells: Array<{
@@ -29,10 +30,10 @@ export type AnomalyCheckResponse = {
   anomalyFlags: Array<{
     id: string;
     level: WarningLevel;
-    title: string;
-    summary: string;
-    targetLabel: string;
-    reason: string;
+    category: WarningCategory;
+    label: string;
+    explanation: string;
+    excerpt?: string;
   }>;
 };
 

@@ -30,16 +30,21 @@ JSON schema:
 Return JSON only.
 Surface warnings; do not exclude, delete, rewrite, or change the analysis.
 Flag only issues that help the user review financial reasoning.
+Return at most one concise flag per category.
+Only use these categories: assumption, limitation, uncertainty, recommendation.
+If a category does not apply, omit it.
+Keep each explanation short enough to fit in 2-3 lines in a side panel.
+When possible, include an excerpt copied from the exact sentence in the analysis that the flag refers to.
 JSON schema:
 {
   "anomalyFlags": [
     {
       "id": "stable-warning-id",
       "level": "low | medium | high",
-      "title": "short warning title",
-      "summary": "one sentence warning",
-      "targetLabel": "what part of the result this warning refers to",
-      "reason": "why this matters in finance terms"
+      "category": "assumption | limitation | uncertainty | recommendation",
+      "label": "short label for the flag",
+      "explanation": "short 1-2 sentence explanation",
+      "excerpt": "short sentence copied from the analysis text"
     }
   ]
 }`,

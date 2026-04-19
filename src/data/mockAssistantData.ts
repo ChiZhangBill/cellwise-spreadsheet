@@ -8,15 +8,14 @@ export const defaultAssistantSettings: AssistantSettings = {
 
 export const initialAssistantMessages: AssistantMessage[] = [
   {
-    id: "welcome",
+    id: "greeting",
     role: "assistant",
-    kind: "suggestion",
-    text: "I can help review revenue trends, flag unusual costs, or draft formulas. I will ask before applying important changes.",
-    pendingAction: {
-      id: "format-currency",
-      label: "Format revenue as currency",
-      description: "Applies a currency display format to the revenue columns after you confirm.",
-      impact: "visual-only",
-    },
+    kind: "plain",
+    text: "Hello! I'm your Excel assistant. I can help you with data analysis, formatting, and more. What would you like to do?",
   },
+];
+
+export const promptSuggestions = [
+  "Calculate the NPV for our project cash flows",
+  "Find revenue outliers in the data",
 ];

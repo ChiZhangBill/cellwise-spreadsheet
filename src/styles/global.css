@@ -814,8 +814,220 @@ h2 {
   font-weight: 800;
 }
 
-.prompt-row {
+/* Refinement options container */
+.refinement-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #d6e4df;
+  border-radius: 12px;
+  background: #f9fdfb;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for refinement options */
+.refinement-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.refinement-options::-webkit-scrollbar-track {
+  background: #f0f4f2;
+  border-radius: 4px;
+}
+
+.refinement-options::-webkit-scrollbar-thumb {
+  background: #b4c5be;
+  border-radius: 4px;
+}
+
+.refinement-options::-webkit-scrollbar-thumb:hover {
+  background: #9cb3aa;
+}
+
+.refinement-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e8e5;
+}
+
+.refinement-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.refinement-option {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d6e4df;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.refinement-option:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #108147;
+}
+
+.refinement-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refinement-option-number {
+  color: #108147;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.refinement-option-actions {
+  display: flex;
   gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-close-options {
+  align-self: center;
+  min-width: 120px;
+  min-height: 36px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #666;
+  border: 2px solid #ddd;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-options:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+/* New refinement card styles */
+.refinement-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid #d6e4df;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.refinement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.refinement-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.refinement-label {
+  color: #64766f;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.refinement-original,
+.refinement-refined {
+  color: #1f342f;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.refinement-original {
+  background: #f5f5f5;
+}
+
+.refinement-refined {
+  background: #e8f5f1;
+  border-left: 3px solid #108147;
+}
+
+.refinement-rationale {
+  color: #64766f;
+  font-size: 0.82rem;
+  font-style: italic;
+  margin: 0;
+  padding-top: 4px;
+}
+
+.refinement-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.refinement-actions button,
+.refinement-option-actions button {
+  min-height: 38px;
+  min-width: 90px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-accept {
+  background: #108147;
+  color: #ffffff;
+  border: none;
+}
+
+.btn-accept:hover:not(:disabled) {
+  background: #0d6a3a;
+}
+
+.btn-edit {
+  background: #ffffff;
+  color: #108147;
+  border: 2px solid #108147;
+}
+
+.btn-edit:hover:not(:disabled) {
+  background: #f0f8f4;
+}
+
+.btn-close {
+  background: #ffffff;
+  color: #666;
+  border: 2px solid #ddd;
+  min-width: 42px;
+}
+
+.btn-close:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.prompt-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .prompt-row textarea {
@@ -833,13 +1045,47 @@ h2 {
   outline: 3px solid rgba(16, 129, 71, 0.15);
 }
 
-.prompt-row button {
-  min-width: 72px;
-  min-height: 42px;
-  align-self: flex-end;
-  background: #102c24;
+.prompt-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-refine,
+.btn-send {
+  min-width: 90px;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-refine {
+  background: #ffffff;
+  color: #108147;
+  border: 2px solid #108147;
+}
+
+.btn-refine:hover:not(:disabled) {
+  background: #f0f8f4;
+}
+
+.btn-send {
+  background: #108147;
   color: #ffffff;
-  font-weight: 800;
+  border: none;
+}
+
+.btn-send:hover:not(:disabled) {
+  background: #0d6a3a;
+}
+
+.btn-refine:disabled,
+.btn-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 980px) {

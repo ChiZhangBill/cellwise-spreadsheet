@@ -86,8 +86,21 @@ export function PromptInputBar({
       {refinements.length > 0 && (
         <div className="refinement-options">
           <div className="refinement-header">
-            <span className="refinement-label">Original:</span>
-            <p className="refinement-original">{refinements[0].originalPrompt}</p>
+            <div className="refinement-header-content">
+              <span className="refinement-label">Original:</span>
+              <p className="refinement-original">{refinements[0].originalPrompt}</p>
+            </div>
+            <button
+              className="btn-close-refinement"
+              onClick={(e) => {
+                e.preventDefault();
+                setRefinements([]);
+              }}
+              type="button"
+              title="Close refinement options"
+            >
+              ✕
+            </button>
           </div>
 
           <div className="refinement-choices">
@@ -125,17 +138,6 @@ export function PromptInputBar({
               </div>
             ))}
           </div>
-
-          <button
-            className="btn-close-options"
-            onClick={(e) => {
-              e.preventDefault();
-              setRefinements([]);
-            }}
-            type="button"
-          >
-            Close
-          </button>
         </div>
       )}
 

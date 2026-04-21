@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 type AssistantStatusProps = {
   errorMessage?: string;
   isThinking: boolean;
@@ -5,7 +7,29 @@ type AssistantStatusProps = {
   onRetry: () => void;
 };
 
+const thinkingSteps = [
+  "Reading the spreadsheet and your prompt",
+  "Checking financial metrics and assumptions",
+  "Drafting the analysis response",
+  "Preparing warning flags and confidence notes",
+];
+
 export function AssistantStatus({ errorMessage, isThinking, messageCount, onRetry }: AssistantStatusProps) {
+  const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isThinking) {
+      setThinkingStepIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setThinkingStepIndex((current) => (current + 1) % thinkingSteps.length);
+    }, 1600);
+
+    return () => window.clearInterval(intervalId);
+  }, [isThinking]);
+
   if (errorMessage) {
     return (
       <div className="assistant-status error" role="alert">
@@ -22,7 +46,7 @@ export function AssistantStatus({ errorMessage, isThinking, messageCount, onRetr
     return (
       <div className="message-card assistant loading-card">
         <span className="message-label">Assistant</span>
-        <p>Reviewing the mock sheet...</p>
+        <p>{thinkingSteps[thinkingStepIndex]}</p>
       </div>
     );
   }

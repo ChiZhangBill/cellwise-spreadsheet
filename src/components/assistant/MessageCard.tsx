@@ -14,9 +14,14 @@ export function MessageCard({ message, onConfirmAction }: MessageCardProps) {
   const activeFlag = message.anomalyFlags?.find((flag) => flag.id === activeFlagId);
 
   return (
-    <article className={`message-card ${message.role} ${message.kind}`}>
+    <article className={`message-card ${message.role} ${message.kind} ${message.isStreaming ? "streaming" : ""}`}>
       <span className="message-label">{message.role === "assistant" ? "Assistant" : "You"}</span>
-      <p>{renderHighlightedText(message.text, activeFlag?.excerpt, activeFlag?.category)}</p>
+      <p>
+        {message.text
+          ? renderHighlightedText(message.text, activeFlag?.excerpt, activeFlag?.category)
+          : "Starting response"}
+        {message.isStreaming && <span className="streaming-cursor" aria-hidden="true" />}
+      </p>
 
       {message.anomalyFlags && message.anomalyFlags.length > 0 && (
         <WarningFlagList

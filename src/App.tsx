@@ -13,7 +13,7 @@ function App() {
   // 1. The grid owns editable sheet values locally in React state.
   // 2. The assistant owns a transcript of user prompts and API-backed analysis results.
   // 3. Settings gate optional Agent B calls before a response is generated.
-  // 4. Confirmed actions are tracked, but the app still does not mutate the sheet automatically.
+  // 4. Confirmed actions are tracked, but reviewed data changes stay out of the sheet.
   const [messages, setMessages] = useState<AssistantMessage[]>(initialAssistantMessages);
   const [isAssistantThinking, setIsAssistantThinking] = useState(false);
   const [assistantError, setAssistantError] = useState<string | undefined>();
@@ -24,6 +24,7 @@ function App() {
   const [settings, setSettings] = useState<AssistantSettings>(defaultAssistantSettings);
 
   const handlePromptSubmit = async (prompt: string) => {
+    const assistantMessageId = crypto.randomUUID();
     const userMessage: AssistantMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -42,7 +43,39 @@ function App() {
         confidenceDisplay: settings.confidenceDisplay,
       }, sheetCells);
 
-      setMessages((current) => [...current, assistantMessage]);
+      const streamingMessage: AssistantMessage = {
+        id: assistantMessageId,
+        role: "assistant",
+        kind: assistantMessage.kind,
+        text: "",
+        isStreaming: true,
+      };
+
+      setMessages((current) => [...current, streamingMessage]);
+      await streamAssistantText(assistantMessage.text, (nextText) => {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  text: nextText,
+                }
+              : message,
+          ),
+        );
+      });
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...assistantMessage,
+                id: assistantMessageId,
+                isStreaming: false,
+              }
+            : message,
+        ),
+      );
     } catch {
       setAssistantError(
         "The assistant API could not complete this analysis. Your sheet and previous results were left unchanged.",
@@ -81,6 +114,12 @@ function App() {
     if (lastPrompt) {
       void handlePromptSubmit(lastPrompt);
     }
+  };
+
+  const handleClearAssistantHistory = () => {
+    setMessages([]);
+    setLastPrompt(undefined);
+    setAssistantError(undefined);
   };
 
   const handleFileImport = async (file: File) => {
@@ -122,6 +161,7 @@ function App() {
         <RightAssistantPanel
           errorMessage={assistantError}
           isThinking={isAssistantThinking}
+          onClearHistory={handleClearAssistantHistory}
           onRetry={handleRetryAssistantRequest}
           messages={messages}
           onConfirmAction={handleConfirmAction}
@@ -132,6 +172,21 @@ function App() {
       </main>
     </div>
   );
+}
+
+async function streamAssistantText(text: string, onUpdate: (nextText: string) => void) {
+  const chunks = text.match(/\S+\s*/g) ?? [text];
+  let streamedText = "";
+
+  for (const chunk of chunks) {
+    streamedText += chunk;
+    onUpdate(streamedText);
+    await wait(26);
+  }
+}
+
+function wait(durationMs: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, durationMs));
 }
 
 export default App;

@@ -16,6 +16,7 @@ export type AssistantMessage = {
   text: string;
   analysisMeta?: AnalysisMeta;
   anomalyFlags?: AnomalyFlag[];
+  isStreaming?: boolean;
   pendingAction?: PendingAction;
 };
 

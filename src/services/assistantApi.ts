@@ -61,11 +61,31 @@ export async function requestAssistantResponse(
     id: crypto.randomUUID(),
     role: "assistant",
     kind: anomalyResult?.length ? "warning" : "suggestion",
-    text: analysis.text,
+    ...normalizeAssistantSuggestion(analysis),
     anomalyFlags: anomalyResult,
     analysisMeta: assumptionResult?.analysisMeta,
-    pendingAction: analysis.pendingAction,
   };
+}
+
+function normalizeAssistantSuggestion(analysis: FinancialAnalysisResponse) {
+  const pendingAction = analysis.pendingAction;
+
+  if (!pendingAction || !isHealthcareCompsAction(pendingAction)) {
+    return {
+      text: analysis.text,
+      pendingAction,
+    };
+  }
+
+  return {
+    text: `${analysis.text}\n\nSuggestion: ${pendingAction.label} - ${pendingAction.description}`,
+    pendingAction: undefined,
+  };
+}
+
+function isHealthcareCompsAction(action: PendingAction) {
+  const combinedText = `${action.id} ${action.label} ${action.description}`.toLowerCase();
+  return combinedText.includes("healthcare") && (combinedText.includes("comp") || combinedText.includes("company"));
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {

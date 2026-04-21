@@ -1,4 +1,5 @@
 import type { AssistantMessage, AssistantSettings, PendingAction } from "../types";
+import { CellWiseLogo } from "./CellWiseLogo";
 import { AssistantSettingsControls } from "./assistant/AssistantSettingsControls";
 import { AssistantStatus } from "./assistant/AssistantStatus";
 import { MessageCard } from "./assistant/MessageCard";
@@ -8,6 +9,7 @@ type RightAssistantPanelProps = {
   errorMessage?: string;
   isThinking: boolean;
   messages: AssistantMessage[];
+  onClearHistory: () => void;
   onConfirmAction: (action: PendingAction) => void;
   onRetry: () => void;
   onSettingsChange: (settings: AssistantSettings) => void;
@@ -19,6 +21,7 @@ export function RightAssistantPanel({
   errorMessage,
   isThinking,
   messages,
+  onClearHistory,
   onConfirmAction,
   onRetry,
   onSettingsChange,
@@ -28,11 +31,21 @@ export function RightAssistantPanel({
   return (
     <aside className="assistant-panel" aria-label="AI assistant panel">
       <div className="assistant-header">
-        <div>
-          <p className="eyebrow">AI Assistant</p>
-          <h2>AI Financial Assistant</h2>
+        <div className="assistant-brand">
+          <CellWiseLogo size="compact" />
+          <h2>CellWise</h2>
         </div>
-        <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
+        <div className="assistant-header-actions">
+          <button
+            className="assistant-clear-button"
+            disabled={isThinking || messages.length === 0}
+            onClick={onClearHistory}
+            type="button"
+          >
+            Clear history
+          </button>
+          <AssistantSettingsControls onSettingsChange={onSettingsChange} settings={settings} />
+        </div>
       </div>
 
       <div className="assistant-thread" aria-live="polite">

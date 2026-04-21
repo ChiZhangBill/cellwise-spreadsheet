@@ -82,15 +82,32 @@ button:disabled {
   gap: 12px;
 }
 
-.app-icon {
-  display: grid;
-  width: 44px;
-  height: 44px;
+.cellwise-logo {
+  display: inline-grid;
   place-items: center;
-  border-radius: 8px;
-  background: #107c41;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.34), transparent 30%),
+    linear-gradient(145deg, #0e7a43, #135a3a);
   color: #ffffff;
-  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 10px 22px rgba(16, 124, 65, 0.18);
+}
+
+.cellwise-logo.regular {
+  width: 46px;
+  height: 46px;
+}
+
+.cellwise-logo.compact {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.cellwise-logo svg {
+  width: 72%;
+  height: 72%;
 }
 
 .eyebrow {
@@ -109,7 +126,7 @@ h2 {
 }
 
 h1 {
-  font-size: 1.15rem;
+  font-size: 1.42rem;
 }
 
 h2 {
@@ -225,20 +242,69 @@ h2 {
   justify-content: center;
   border: 1px solid #cdd9d5;
   border-radius: 6px;
+  background: #ffffff;
   color: #49645c;
+  cursor: pointer;
   font-weight: 800;
+  padding: 0;
+}
+
+.formula-label:hover:not(:disabled) {
+  border-color: #107c41;
+  background: #eef8f2;
+  color: #0d5c3b;
 }
 
 .formula-value {
   flex: 1;
-  overflow: hidden;
   border: 1px solid #d7e0dd;
   border-radius: 6px;
   background: #ffffff;
   color: #365148;
   padding: 6px 10px;
+  outline: 0;
+}
+
+.formula-value:focus {
+  border-color: #108147;
+  box-shadow: 0 0 0 3px rgba(16, 129, 71, 0.13);
+}
+
+.formula-value.error {
+  border-color: #d65b4d;
+  box-shadow: 0 0 0 3px rgba(214, 91, 77, 0.12);
+}
+
+.formula-error {
+  max-width: 150px;
+  overflow: hidden;
+  color: #9a3428;
+  font-size: 0.75rem;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.formula-templates {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.formula-templates button {
+  min-height: 28px;
+  border-color: #cfe0da;
+  background: #ffffff;
+  color: #315047;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0 8px;
+}
+
+.formula-templates button:hover:not(:disabled) {
+  border-color: #107c41;
+  background: #eff8f3;
+  color: #0d5c3b;
 }
 
 .grid-scroll-region {
@@ -397,6 +463,36 @@ h2 {
   line-height: 1.4;
 }
 
+.assistant-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistant-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assistant-clear-button {
+  min-height: 36px;
+  border-color: #e0b4ad;
+  border-radius: 999px;
+  background: #fffafa;
+  color: #8a2d21;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.assistant-clear-button:hover:not(:disabled) {
+  border-color: #d55c4e;
+  background: #fff1ef;
+  color: #7d2217;
+}
+
 .assistant-settings-shell {
   position: relative;
   flex: 0 0 auto;
@@ -532,6 +628,11 @@ h2 {
   background: #fffaf0;
 }
 
+.message-card.streaming {
+  border-color: #b8d8c8;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fcf9 100%);
+}
+
 .message-label {
   display: block;
   margin-bottom: 6px;
@@ -543,6 +644,17 @@ h2 {
 .message-card p {
   margin: 0;
   line-height: 1.45;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 3px;
+  border-radius: 999px;
+  background: #107c41;
+  transform: translateY(2px);
+  animation: cursor-blink 900ms steps(2, start) infinite;
 }
 
 .pending-action {
@@ -788,8 +900,40 @@ h2 {
   color: #7d352b;
 }
 
+.loading-card p {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .loading-card p::after {
+  display: inline-block;
+  width: 28px;
+  overflow: hidden;
   content: "...";
+  animation: loading-dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes loading-dots {
+  0% {
+    width: 0;
+  }
+
+  100% {
+    width: 28px;
+  }
 }
 
 .prompt-input-bar {

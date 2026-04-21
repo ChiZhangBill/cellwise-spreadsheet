@@ -71,10 +71,10 @@ export async function requestAssistantResponse(
         {
           id: "destructive-edit",
           level: "high",
-          title: "Data change requires confirmation",
-          summary: "The request may alter or replace cell values.",
-          targetLabel: "pending action",
-          reason: "Shared automation rules require explicit approval for data-changing actions.",
+          category: "recommendation",
+          label: "Recommendation",
+          explanation:
+            "This request could change spreadsheet data, so it should stay in a review step until the user confirms it.",
         },
       ],
     );
@@ -133,10 +133,10 @@ export async function requestAssistantResponse(
         {
           id: "high-multiple-dataharbor",
           level: "medium",
-          title: "High EV/EBITDA multiple",
-          summary: "DataHarbor is listed at 20.5x, above the rest of the sample range.",
-          targetLabel: "DataHarbor EV/EBITDA",
-          reason: "A high multiple can imply aggressive valuation assumptions or stronger expected growth.",
+          category: "uncertainty",
+          label: "Uncertainty",
+          explanation:
+            "DataHarbor sits above the rest of the visible EV/EBITDA range, so peer conclusions may be sensitive to this one company.",
         },
       ],
     );
@@ -169,18 +169,18 @@ export async function requestAssistantResponse(
         {
           id: "revenue-outlier-finsight",
           level: "medium",
-          title: "Revenue concentration",
-          summary: "FinSight is the largest revenue row at $306M.",
-          targetLabel: "FinSight revenue",
-          reason: "Large peers can skew averages when the dataset is small.",
+          category: "limitation",
+          label: "Limitation",
+          explanation:
+            "The result points to the largest values, but it does not run a formal statistical outlier test on the sample.",
         },
         {
           id: "revenue-outlier-dataharbor",
           level: "low",
-          title: "Secondary revenue outlier",
-          summary: "DataHarbor is also near the top of the sample at $244M.",
-          targetLabel: "DataHarbor revenue",
-          reason: "It may affect benchmark calculations but is less extreme than FinSight.",
+          category: "recommendation",
+          label: "Recommendation",
+          explanation:
+            "Review the highest-revenue rows before using them in peer benchmarks, because they can pull simple averages upward.",
         },
       ],
     );

@@ -1,4 +1,5 @@
 import type { AnalysisMeta, AnomalyFlag, AssistantMessage, PendingAction, PromptRefinement, SheetCell } from "../types";
+import type { WarningCategory } from "../types";
 
 type RequestAssistantOptions = {
   anomalyDetection: boolean;
@@ -18,7 +19,7 @@ type FinancialAnalysisResponse = {
 };
 
 type AnomalyCheckResponse = {
-  anomalyFlags: AnomalyFlag[];
+  anomalyFlags: unknown[];
 };
 
 type AssumptionExtractionResponse = {
@@ -46,8 +47,8 @@ export async function requestAssistantResponse(
           analysisText: analysis.text,
           prompt,
           sheet,
-        })
-      : Promise.resolve<AnomalyCheckResponse | undefined>(undefined),
+        }).then((result) => normalizeAnomalyFlags(result.anomalyFlags, analysis.text))
+      : Promise.resolve<AnomalyFlag[] | undefined>(undefined),
     options.confidenceDisplay
       ? postJson<AssumptionExtractionResponse>("/api/extract-assumptions", {
           analysisText: analysis.text,
@@ -59,12 +60,32 @@ export async function requestAssistantResponse(
   return {
     id: crypto.randomUUID(),
     role: "assistant",
-    kind: anomalyResult?.anomalyFlags.length ? "warning" : "suggestion",
-    text: analysis.text,
-    anomalyFlags: anomalyResult?.anomalyFlags,
+    kind: anomalyResult?.length ? "warning" : "suggestion",
+    ...normalizeAssistantSuggestion(analysis),
+    anomalyFlags: anomalyResult,
     analysisMeta: assumptionResult?.analysisMeta,
-    pendingAction: analysis.pendingAction,
   };
+}
+
+function normalizeAssistantSuggestion(analysis: FinancialAnalysisResponse) {
+  const pendingAction = analysis.pendingAction;
+
+  if (!pendingAction || !isHealthcareCompsAction(pendingAction)) {
+    return {
+      text: analysis.text,
+      pendingAction,
+    };
+  }
+
+  return {
+    text: `${analysis.text}\n\nSuggestion: ${pendingAction.label} - ${pendingAction.description}`,
+    pendingAction: undefined,
+  };
+}
+
+function isHealthcareCompsAction(action: PendingAction) {
+  const combinedText = `${action.id} ${action.label} ${action.description}`.toLowerCase();
+  return combinedText.includes("healthcare") && (combinedText.includes("comp") || combinedText.includes("company"));
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -94,4 +115,152 @@ function createSheetSnapshot(sheetCells: SheetCell[]): SheetSnapshot {
         value: cell.value,
       })),
   };
+}
+
+function normalizeAnomalyFlags(rawFlags: unknown[], analysisText: string): AnomalyFlag[] {
+  const firstFlagByCategory = new Map<WarningCategory, AnomalyFlag>();
+
+  for (const rawFlag of rawFlags) {
+    if (!rawFlag || typeof rawFlag !== "object") {
+      continue;
+    }
+
+    const candidate = rawFlag as Record<string, unknown>;
+    const category = normalizeCategory(candidate);
+
+    if (!category || firstFlagByCategory.has(category)) {
+      continue;
+    }
+
+    const explanation = createShortExplanation(candidate);
+    if (!explanation) {
+      continue;
+    }
+
+    firstFlagByCategory.set(category, {
+      id: readText(candidate.id) || `${category}-${firstFlagByCategory.size + 1}`,
+      level: normalizeLevel(candidate.level),
+      category,
+      label: defaultLabelForCategory(category),
+      explanation,
+      excerpt: createExcerpt(candidate, analysisText),
+    });
+  }
+
+  return Array.from(firstFlagByCategory.values());
+}
+
+function normalizeCategory(candidate: Record<string, unknown>): WarningCategory | undefined {
+  const explicitCategory = readText(candidate.category)?.toLowerCase();
+
+  if (
+    explicitCategory === "assumption" ||
+    explicitCategory === "limitation" ||
+    explicitCategory === "uncertainty" ||
+    explicitCategory === "recommendation"
+  ) {
+    return explicitCategory;
+  }
+
+  const combinedText = [
+    readText(candidate.title),
+    readText(candidate.summary),
+    readText(candidate.reason),
+    readText(candidate.targetLabel),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (combinedText.includes("assumption") || combinedText.includes("assume")) {
+    return "assumption";
+  }
+
+  if (
+    combinedText.includes("limit") ||
+    combinedText.includes("missing") ||
+    combinedText.includes("does not define") ||
+    combinedText.includes("does not perform")
+  ) {
+    return "limitation";
+  }
+
+  if (
+    combinedText.includes("uncertain") ||
+    combinedText.includes("may") ||
+    combinedText.includes("could") ||
+    combinedText.includes("unclear")
+  ) {
+    return "uncertainty";
+  }
+
+  return "recommendation";
+}
+
+function createShortExplanation(candidate: Record<string, unknown>) {
+  const primaryText =
+    readText(candidate.explanation) ||
+    [readText(candidate.summary), readText(candidate.reason)].filter(Boolean).join(" ");
+
+  if (!primaryText) {
+    return "";
+  }
+
+  return primaryText.length > 180 ? `${primaryText.slice(0, 177).trimEnd()}...` : primaryText;
+}
+
+function createExcerpt(candidate: Record<string, unknown>, analysisText: string) {
+  const explicitExcerpt = readText(candidate.excerpt);
+
+  if (explicitExcerpt && analysisText.includes(explicitExcerpt)) {
+    return explicitExcerpt;
+  }
+
+  const sentences = analysisText
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  if (sentences.length === 0) {
+    return undefined;
+  }
+
+  const searchTerms = [
+    ...readText(candidate.excerpt).split(/\s+/),
+    ...readText(candidate.label).split(/\s+/),
+    ...readText(candidate.summary).split(/\s+/),
+    ...readText(candidate.targetLabel).split(/\s+/),
+  ]
+    .map((term) => term.toLowerCase().replace(/[^a-z0-9$.%-]/g, ""))
+    .filter((term) => term.length >= 3);
+
+  const bestSentence = sentences
+    .map((sentence) => ({
+      sentence,
+      score: searchTerms.reduce((score, term) => (sentence.toLowerCase().includes(term) ? score + 1 : score), 0),
+    }))
+    .sort((left, right) => right.score - left.score)[0];
+
+  return bestSentence && bestSentence.score > 0 ? bestSentence.sentence : sentences[0];
+}
+
+function normalizeLevel(level: unknown): AnomalyFlag["level"] {
+  return level === "high" || level === "medium" || level === "low" ? level : "medium";
+}
+
+function defaultLabelForCategory(category: WarningCategory) {
+  switch (category) {
+    case "assumption":
+      return "Assumption";
+    case "limitation":
+      return "Limitation";
+    case "uncertainty":
+      return "Uncertainty";
+    case "recommendation":
+      return "Recommendation";
+  }
+}
+
+function readText(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : "";
 }

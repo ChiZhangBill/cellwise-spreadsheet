@@ -16,6 +16,7 @@ export type AssistantMessage = {
   text: string;
   analysisMeta?: AnalysisMeta;
   anomalyFlags?: AnomalyFlag[];
+  isStreaming?: boolean;
   pendingAction?: PendingAction;
 };
 
@@ -33,13 +34,19 @@ export type PromptRefinement = {
 
 export type WarningLevel = "low" | "medium" | "high";
 
+export type WarningCategory =
+  | "assumption"
+  | "limitation"
+  | "uncertainty"
+  | "recommendation";
+
 export type AnomalyFlag = {
   id: string;
   level: WarningLevel;
-  title: string;
-  summary: string;
-  targetLabel: string;
-  reason: string;
+  category: WarningCategory;
+  label: string;
+  explanation: string;
+  excerpt?: string;
 };
 
 export type AnalysisMeta = {

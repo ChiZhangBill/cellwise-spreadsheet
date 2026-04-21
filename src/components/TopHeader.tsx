@@ -1,4 +1,5 @@
 import { ChangeEvent, useRef, useState } from "react";
+import { CellWiseLogo } from "./CellWiseLogo";
 
 type TopHeaderProps = {
   confirmedActionCount: number;
@@ -33,12 +34,9 @@ export function TopHeader({
   return (
     <header className="top-header">
       <div className="title-cluster">
-        <div className="app-icon" aria-hidden="true">
-          F
-        </div>
+        <CellWiseLogo />
         <div>
-          <p className="eyebrow">Finance Sheet AI</p>
-          <h1>Quarterly operating model</h1>
+          <h1>CellWise</h1>
         </div>
       </div>
 

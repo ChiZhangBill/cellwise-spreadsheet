@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { SpreadsheetGrid } from "./components/SpreadsheetGrid";
+import { SpreadsheetGrid, type SpreadsheetFocusRequest } from "./components/SpreadsheetGrid";
 import { RightAssistantPanel } from "./components/RightAssistantPanel";
 import { TopHeader } from "./components/TopHeader";
 import { defaultAssistantSettings, initialAssistantMessages } from "./data/mockAssistantData";
 import { createMockSheet } from "./data/mockSpreadsheet";
+import {
+  columnIndexToLetter,
+  columnLetterToIndex,
+  insertColumnAfter,
+  insertRowAfter,
+  parseCellAddress,
+} from "./data/sheetMutations";
 import { requestAssistantResponse } from "./services/assistantApi";
 import { importSpreadsheetFile } from "./services/spreadsheetImport";
 import type { AssistantMessage, AssistantSettings, PendingAction } from "./types";
@@ -22,6 +29,7 @@ function App() {
   const [lastPrompt, setLastPrompt] = useState<string | undefined>();
   const [sheetCells, setSheetCells] = useState(() => createMockSheet());
   const [settings, setSettings] = useState<AssistantSettings>(defaultAssistantSettings);
+  const [spreadsheetFocus, setSpreadsheetFocus] = useState<SpreadsheetFocusRequest | null>(null);
 
   const handlePromptSubmit = async (prompt: string) => {
     const assistantMessageId = crypto.randomUUID();
@@ -86,6 +94,28 @@ function App() {
   };
 
   const handleConfirmAction = (action: PendingAction) => {
+    let defaultFocus: string | undefined;
+
+    if (action.sheetMutation?.type === "insert-row-after") {
+      setSheetCells((current) => insertRowAfter(current, action.sheetMutation.anchorRow));
+      defaultFocus = `A${action.sheetMutation.anchorRow + 1}`;
+    } else if (action.sheetMutation?.type === "insert-column-after") {
+      setSheetCells((current) => insertColumnAfter(current, action.sheetMutation.anchorColumn));
+      const anchorIdx = columnLetterToIndex(action.sheetMutation.anchorColumn.toUpperCase());
+      defaultFocus = `${columnIndexToLetter(anchorIdx + 1)}1`;
+    }
+
+    const focusId = action.focusCellId ?? defaultFocus;
+    if (focusId) {
+      const highlight: SpreadsheetFocusRequest["highlight"] =
+        action.sheetMutation?.type === "insert-column-after"
+          ? "column"
+          : action.sheetMutation?.type === "insert-row-after"
+            ? "row"
+            : undefined;
+      setSpreadsheetFocus({ cellId: focusId, nonce: Date.now(), highlight });
+    }
+
     setConfirmedActions((current) => [...current, action]);
     setMessages((current) =>
       current.map((message) =>
@@ -101,9 +131,27 @@ function App() {
   };
 
   const handleCellValueChange = (cellId: string, value: string) => {
-    setSheetCells((current) =>
-      current.map((cell) => (cell.id === cellId ? { ...cell, value } : cell)),
-    );
+    setSheetCells((current) => {
+      const existing = current.find((cell) => cell.id === cellId);
+      if (existing) {
+        return current.map((cell) => (cell.id === cellId ? { ...cell, value } : cell));
+      }
+
+      const parsed = parseCellAddress(cellId);
+      if (!parsed) {
+        return current;
+      }
+
+      return [
+        ...current,
+        {
+          id: cellId,
+          column: parsed.column,
+          row: parsed.row,
+          value,
+        },
+      ];
+    });
   };
 
   const handleSettingsChange = (nextSettings: AssistantSettings) => {
@@ -156,7 +204,12 @@ function App() {
       />
       <main className="workspace-layout">
         <section className="sheet-workspace" aria-label="Spreadsheet workspace">
-          <SpreadsheetGrid cells={sheetCells} onCellValueChange={handleCellValueChange} />
+          <SpreadsheetGrid
+            cells={sheetCells}
+            focusRequest={spreadsheetFocus}
+            onCellValueChange={handleCellValueChange}
+            onFocusRequestComplete={() => setSpreadsheetFocus(null)}
+          />
         </section>
         <RightAssistantPanel
           errorMessage={assistantError}

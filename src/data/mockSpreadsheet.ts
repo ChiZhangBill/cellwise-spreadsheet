@@ -39,7 +39,12 @@ function inferCellVariant(value: string, row: number, columnIndex: number): Shee
 }
 
 export function createSheetFromRows(rows: string[][]): SheetCell[] {
-  return Array.from({ length: 20 }).flatMap((_, rowIndex) => {
+  // Calculate the number of rows needed: data rows + 10 extra rows for user input
+  const dataRows = rows.length;
+  const extraRows = 10;
+  const totalRows = dataRows + extraRows;
+
+  return Array.from({ length: totalRows }).flatMap((_, rowIndex) => {
     const row = rowIndex + 1;
 
     return columns.map((column, columnIndex) => {

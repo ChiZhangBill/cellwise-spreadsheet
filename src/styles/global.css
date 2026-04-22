@@ -709,11 +709,38 @@ h2 {
   font-weight: 700;
 }
 
-.pending-action button {
+.pending-action-buttons {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+
+.pending-action-buttons button {
   min-height: 36px;
+  font-weight: 800;
+}
+
+.pending-action-confirm {
   background: #107c41;
   color: #ffffff;
-  font-weight: 800;
+  border: none;
+}
+
+.pending-action-confirm:hover:not(:disabled) {
+  background: #0d6a3a;
+  color: #ffffff;
+}
+
+.pending-action-ignore {
+  background: #ffffff;
+  color: #4b6660;
+  border: 1px solid #c9d4d1;
+}
+
+.pending-action-ignore:hover:not(:disabled) {
+  background: #f3f6f5;
+  color: #1f342f;
+  border-color: #8aa89c;
 }
 
 .warning-list {

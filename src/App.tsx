@@ -177,6 +177,20 @@ function App() {
     );
   };
 
+  const handleIgnoreAction = (action: PendingAction) => {
+    setMessages((current) =>
+      current.map((message) =>
+        message.pendingAction?.id === action.id
+          ? {
+              ...message,
+              pendingAction: undefined,
+              text: `${message.text} Ignored: ${action.label}.`,
+            }
+          : message,
+      ),
+    );
+  };
+
   const handleCellValueChange = (cellId: string, value: string) => {
     setSheetCells((current) => {
       const existing = current.find((cell) => cell.id === cellId);
@@ -265,6 +279,7 @@ function App() {
           onRetry={handleRetryAssistantRequest}
           messages={messages}
           onConfirmAction={handleConfirmAction}
+          onIgnoreAction={handleIgnoreAction}
           onSettingsChange={handleSettingsChange}
           onSubmitPrompt={handlePromptSubmit}
           settings={settings}

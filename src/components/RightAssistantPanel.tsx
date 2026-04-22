@@ -11,6 +11,7 @@ type RightAssistantPanelProps = {
   messages: AssistantMessage[];
   onClearHistory: () => void;
   onConfirmAction: (action: PendingAction) => void;
+  onIgnoreAction: (action: PendingAction) => void;
   onRetry: () => void;
   onSettingsChange: (settings: AssistantSettings) => void;
   onSubmitPrompt: (prompt: string) => void;
@@ -23,6 +24,7 @@ export function RightAssistantPanel({
   messages,
   onClearHistory,
   onConfirmAction,
+  onIgnoreAction,
   onRetry,
   onSettingsChange,
   onSubmitPrompt,
@@ -50,7 +52,12 @@ export function RightAssistantPanel({
 
       <div className="assistant-thread" aria-live="polite">
         {messages.map((message) => (
-          <MessageCard key={message.id} message={message} onConfirmAction={onConfirmAction} />
+          <MessageCard
+            key={message.id}
+            message={message}
+            onConfirmAction={onConfirmAction}
+            onIgnoreAction={onIgnoreAction}
+          />
         ))}
 
         <AssistantStatus

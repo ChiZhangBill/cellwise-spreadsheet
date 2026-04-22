@@ -7,9 +7,10 @@ import { WarningFlagList } from "./WarningFlagList";
 type MessageCardProps = {
   message: AssistantMessage;
   onConfirmAction: (action: PendingAction) => void;
+  onIgnoreAction: (action: PendingAction) => void;
 };
 
-export function MessageCard({ message, onConfirmAction }: MessageCardProps) {
+export function MessageCard({ message, onConfirmAction, onIgnoreAction }: MessageCardProps) {
   const [activeFlagId, setActiveFlagId] = useState<string | undefined>();
   const activeFlag = message.anomalyFlags?.find((flag) => flag.id === activeFlagId);
 
@@ -40,9 +41,22 @@ export function MessageCard({ message, onConfirmAction }: MessageCardProps) {
             <p>{message.pendingAction.description}</p>
             <span>Impact: {message.pendingAction.impact}</span>
           </div>
-          <button type="button" onClick={() => onConfirmAction(message.pendingAction!)}>
-            Confirm
-          </button>
+          <div className="pending-action-buttons">
+            <button
+              className="pending-action-ignore"
+              type="button"
+              onClick={() => onIgnoreAction(message.pendingAction!)}
+            >
+              Ignore
+            </button>
+            <button
+              className="pending-action-confirm"
+              type="button"
+              onClick={() => onConfirmAction(message.pendingAction!)}
+            >
+              Confirm
+            </button>
+          </div>
         </div>
       )}
     </article>

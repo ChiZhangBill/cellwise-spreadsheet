@@ -2,11 +2,27 @@ export type AssistantMessageKind = "plain" | "suggestion" | "warning";
 
 export type AssistantRole = "assistant" | "user";
 
+export type PendingSheetMutation =
+  | {
+      type: "insert-row-after";
+      /** A new empty row is inserted immediately after this row (1-based). */
+      anchorRow: number;
+    }
+  | {
+      type: "insert-column-after";
+      /** A new empty column is inserted immediately to the right of this column (A–J). */
+      anchorColumn: string;
+    };
+
 export type PendingAction = {
   id: string;
   label: string;
   description: string;
   impact: "visual-only" | "formula-change" | "data-change";
+  /** When the user confirms, apply this structural change to the sheet. */
+  sheetMutation?: PendingSheetMutation;
+  /** After confirm (and optional mutation), scroll to this cell and highlight the row. */
+  focusCellId?: string;
 };
 
 export type AssistantMessage = {

@@ -11,9 +11,23 @@ JSON schema:
     "id": "stable-action-id",
     "label": "short user-facing action",
     "description": "what would happen after confirmation",
-    "impact": "visual-only | formula-change | data-change"
+    "impact": "visual-only | formula-change | data-change",
+    "sheetMutation": {
+      "type": "insert-row-after",
+      "anchorRow": 0
+    },
+    "focusCellId": "A1"
   }
-}`,
+}
+
+Root object must include only "text" and optionally "pendingAction". pendingAction may omit sheetMutation and focusCellId.
+
+Optional fields on pendingAction (omit when not needed):
+- sheetMutation: include only when the confirmed action should insert a blank row or column.
+  - insert-row-after: anchorRow is the 1-based row after which a new empty row appears.
+  - insert-column-after: anchorColumn is a single letter A–J; a new empty column is inserted immediately to its right (may add column K if inserting after J).
+- focusCellId: cell address such as "E12" to scroll into view and highlight after confirmation. If sheetMutation is insert-row-after and focusCellId is omitted, the UI focuses the first cell of the new row (e.g. anchorRow+1 in column A).
+`,
 
   promptRefinement: `You are Agent B, the interaction and validation layer for a finance spreadsheet assistant.
 Return JSON only.

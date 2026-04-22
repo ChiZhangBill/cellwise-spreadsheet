@@ -1,31 +1,94 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { sheetColumns } from "../data/mockSpreadsheet";
+import { columnLetterToIndex, sortedColumnLetters } from "../data/sheetMutations";
 import type { SheetCell } from "../types";
+
+export type SpreadsheetFocusRequest = {
+  cellId: string;
+  nonce: number;
+  /** Row vs column emphasis after agent insert (default: row). */
+  highlight?: "row" | "column";
+};
 
 type SpreadsheetGridProps = {
   cells: SheetCell[];
   onCellValueChange: (cellId: string, value: string) => void;
+  focusRequest?: SpreadsheetFocusRequest | null;
+  onFocusRequestComplete?: () => void;
 };
 
-export function SpreadsheetGrid({ cells, onCellValueChange }: SpreadsheetGridProps) {
+export function SpreadsheetGrid({
+  cells,
+  onCellValueChange,
+  focusRequest,
+  onFocusRequestComplete,
+}: SpreadsheetGridProps) {
   const [selectedCellId, setSelectedCellId] = useState("A1");
   const [formulaDraft, setFormulaDraft] = useState("");
   const [formulaError, setFormulaError] = useState<string | null>(null);
+  const [flashRow, setFlashRow] = useState<number | null>(null);
+  const [flashColumn, setFlashColumn] = useState<string | null>(null);
   const formulaInputRef = useRef<HTMLInputElement>(null);
+  const cellsRef = useRef(cells);
+  cellsRef.current = cells;
   const selectedCell = cells.find((cell) => cell.id === selectedCellId) ?? cells[0];
 
-  const cellsByRow = useMemo(
-    () => {
-      const rowCount = Math.max(20, ...cells.map((cell) => cell.row));
+  const activeColumns = useMemo(() => sortedColumnLetters(cells), [cells]);
 
-      return Array.from({ length: rowCount }, (_, rowIndex) => {
-        const row = rowIndex + 1;
-        return cells.filter((cell) => cell.row === row);
+  const cellsByRow = useMemo(() => {
+    const rowCount = Math.max(20, ...cells.map((cell) => cell.row));
+
+    return Array.from({ length: rowCount }, (_, rowIndex) => {
+      const row = rowIndex + 1;
+      const rowCells = cells.filter((cell) => cell.row === row);
+      return activeColumns.map((column) => {
+        const cell = rowCells.find((current) => current.column === column);
+        if (cell) {
+          return cell;
+        }
+        return {
+          id: `${column}${row}`,
+          column,
+          row,
+          value: "",
+        } satisfies SheetCell;
       });
-    },
-    [cells],
-  );
+    });
+  }, [cells, activeColumns]);
+
+  useEffect(() => {
+    if (!focusRequest) {
+      return;
+    }
+
+    const match = cellsRef.current.find((cell) => cell.id === focusRequest.cellId);
+    if (!match) {
+      onFocusRequestComplete?.();
+      return;
+    }
+
+    setSelectedCellId(focusRequest.cellId);
+    const emphasizeColumn = focusRequest.highlight === "column";
+    setFlashRow(emphasizeColumn ? null : match.row);
+    setFlashColumn(emphasizeColumn ? match.column : null);
+
+    const scrollTimer = window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>(`[data-cell-id="${focusRequest.cellId}"]`)
+        ?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+    }, 50);
+
+    const clearFlashTimer = window.setTimeout(() => {
+      setFlashRow(null);
+      setFlashColumn(null);
+      onFocusRequestComplete?.();
+    }, 2400);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearFlashTimer);
+    };
+  }, [focusRequest, onFocusRequestComplete]);
 
   useEffect(() => {
     setFormulaDraft(selectedCell?.value ?? "");
@@ -125,9 +188,11 @@ export function SpreadsheetGrid({ cells, onCellValueChange }: SpreadsheetGridPro
       <div className="grid-scroll-region">
         <div className="spreadsheet-grid" role="grid" aria-label="Mock finance spreadsheet">
           <div className="corner-cell" />
-          {sheetColumns.map((column) => (
+          {activeColumns.map((column) => (
             <div
-              className={`column-header ${selectedCell?.column === column ? "selected-header" : ""}`}
+              className={`column-header ${selectedCell?.column === column ? "selected-header" : ""} ${
+                flashColumn === column ? "sheet-region-flash" : ""
+              }`}
               role="columnheader"
               key={column}
             >
@@ -141,14 +206,20 @@ export function SpreadsheetGrid({ cells, onCellValueChange }: SpreadsheetGridPro
 
             return (
               <div className="grid-row" role="row" key={row}>
-                <div className={`row-header ${isSelectedRow ? "selected-header" : ""}`} role="rowheader">
+                <div
+                  className={`row-header ${isSelectedRow ? "selected-header" : ""} ${
+                    flashRow === row ? "sheet-region-flash" : ""
+                  }`}
+                  role="rowheader"
+                >
                   {row}
                 </div>
                 {rowCells.map((cell) => (
                   <div
                     className={`sheet-cell ${cell.variant ?? ""} ${
                       selectedCellId === cell.id ? "selected-cell" : ""
-                    }`}
+                    } ${flashRow === row || flashColumn === cell.column ? "sheet-region-flash" : ""}`}
+                    data-cell-id={cell.id}
                     role="gridcell"
                     key={cell.id}
                     aria-selected={selectedCellId === cell.id}
@@ -221,7 +292,7 @@ function evaluateFormula(formula: string, cells: SheetCell[]): FormulaResult {
     },
   );
 
-  const withCellValues = withFunctions.replace(/\b([A-J](?:[1-9]\d*))\b/gi, (_match, cellId: string) =>
+  const withCellValues = withFunctions.replace(/\b([A-Z]+(?:[1-9]\d*))\b/gi, (_match, cellId: string) =>
     String(getNumericCellValue(cellId.toUpperCase(), cells)),
   );
 
@@ -247,13 +318,13 @@ function getArgumentValues(rawArgument: string, cells: SheetCell[]) {
     .split(",")
     .flatMap((argument) => {
       const trimmedArgument = argument.trim();
-      const rangeMatch = trimmedArgument.match(/^([A-J](?:[1-9]\d*)):([A-J](?:[1-9]\d*))$/i);
+      const rangeMatch = trimmedArgument.match(/^([A-Z]+(?:[1-9]\d*)):([A-Z]+(?:[1-9]\d*))$/i);
 
       if (rangeMatch) {
         return getRangeValues(rangeMatch[1].toUpperCase(), rangeMatch[2].toUpperCase(), cells);
       }
 
-      if (/^[A-J](?:[1-9]\d*)$/i.test(trimmedArgument)) {
+      if (/^[A-Z]+(?:[1-9]\d*)$/i.test(trimmedArgument)) {
         return [getNumericCellValue(trimmedArgument.toUpperCase(), cells)];
       }
 
@@ -297,9 +368,17 @@ function getNumericCellValue(cellId: string, cells: SheetCell[]) {
 }
 
 function parseCellId(cellId: string) {
+  const match = cellId.toUpperCase().match(/^([A-Z]+)(\d+)$/);
+  if (!match) {
+    return {
+      columnIndex: 0,
+      row: 1,
+    };
+  }
+
   return {
-    columnIndex: sheetColumns.indexOf(cellId[0]),
-    row: Number(cellId.slice(1)),
+    columnIndex: columnLetterToIndex(match[1]),
+    row: Number(match[2]),
   };
 }
 

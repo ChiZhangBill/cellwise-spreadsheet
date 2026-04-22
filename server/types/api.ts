@@ -8,11 +8,23 @@ export type SheetSnapshot = {
   }>;
 };
 
+export type PendingSheetMutationDto =
+  | {
+      type: "insert-row-after";
+      anchorRow: number;
+    }
+  | {
+      type: "insert-column-after";
+      anchorColumn: string;
+    };
+
 export type PendingActionDto = {
   id: string;
   label: string;
   description: string;
   impact: "visual-only" | "formula-change" | "data-change";
+  sheetMutation?: PendingSheetMutationDto;
+  focusCellId?: string;
 };
 
 export type PromptRefinementResponse = {

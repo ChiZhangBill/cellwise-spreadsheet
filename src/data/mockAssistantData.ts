@@ -4,6 +4,7 @@ export const defaultAssistantSettings: AssistantSettings = {
   promptRefinement: true,
   anomalyDetection: true,
   confidenceDisplay: true,
+  showAiActions: false,
 };
 
 export const initialAssistantMessages: AssistantMessage[] = [

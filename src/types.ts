@@ -48,6 +48,7 @@ export type AssistantSettings = {
   promptRefinement: boolean;
   anomalyDetection: boolean;
   confidenceDisplay: boolean;
+  showAiActions: boolean;
 };
 
 export type PromptRefinement = {

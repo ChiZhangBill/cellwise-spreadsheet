@@ -56,6 +56,11 @@ export function AssistantSettingsControls({
             label="Output Check / Confidence Display"
             onChange={() => handleToggleSetting("confidenceDisplay")}
           />
+          <ToggleRow
+            checked={settings.showAiActions}
+            label="Ignore AI action"
+            onChange={() => handleToggleSetting("showAiActions")}
+          />
           <button className="assistant-settings-close" onClick={() => setIsOpen(false)} type="button">
             Hide options
           </button>

@@ -8,9 +8,15 @@ type MessageCardProps = {
   message: AssistantMessage;
   onConfirmAction: (action: PendingAction) => void;
   onIgnoreAction: (action: PendingAction) => void;
+  showAiActions: boolean;
 };
 
-export function MessageCard({ message, onConfirmAction, onIgnoreAction }: MessageCardProps) {
+export function MessageCard({
+  message,
+  onConfirmAction,
+  onIgnoreAction,
+  showAiActions,
+}: MessageCardProps) {
   const [activeFlagId, setActiveFlagId] = useState<string | undefined>();
   const activeFlag = message.anomalyFlags?.find((flag) => flag.id === activeFlagId);
 
@@ -34,7 +40,7 @@ export function MessageCard({ message, onConfirmAction, onIgnoreAction }: Messag
 
       {message.analysisMeta && <AnalysisTransparency analysisMeta={message.analysisMeta} />}
 
-      {message.pendingAction && (
+      {message.pendingAction && showAiActions && (
         <div className="pending-action">
           <div>
             <strong>{message.pendingAction.label}</strong>

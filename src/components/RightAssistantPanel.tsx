@@ -57,6 +57,7 @@ export function RightAssistantPanel({
             message={message}
             onConfirmAction={onConfirmAction}
             onIgnoreAction={onIgnoreAction}
+            showAiActions={settings.showAiActions}
           />
         ))}
 

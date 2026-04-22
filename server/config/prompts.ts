@@ -16,16 +16,22 @@ JSON schema:
       "type": "insert-row-after",
       "anchorRow": 0
     },
+    "populateCells": [
+      { "cellId": "K1", "value": "EV/EBITDA", "variant": "header" },
+      { "cellId": "K2", "value": "13.0x", "variant": "multiple" }
+    ],
     "focusCellId": "A1"
   }
 }
 
-Root object must include only "text" and optionally "pendingAction". pendingAction may omit sheetMutation and focusCellId.
+Root object must include only "text" and optionally "pendingAction". pendingAction may omit sheetMutation, populateCells, and focusCellId.
 
 Optional fields on pendingAction (omit when not needed):
-- sheetMutation: include only when the confirmed action should insert a blank row or column.
-  - insert-row-after: anchorRow is the 1-based row after which a new empty row appears.
-  - insert-column-after: anchorColumn is a single letter A–J; a new empty column is inserted immediately to its right (may add column K if inserting after J).
+- sheetMutation: include only when the confirmed action should insert a row or column.
+  - insert-row-after: anchorRow is the 1-based row after which a new row appears.
+  - insert-column-after: anchorColumn is a single letter A–J; a new column is inserted immediately to its right (may add column K if inserting after J).
+- populateCells: values to write after the structural mutation (or into the existing sheet when no mutation is specified). Each entry is { cellId, value, optional variant }. Use this whenever the action implies filling cells with computed values (e.g. adding an EV/EBITDA column with values for each company row). Cell ids reference the post-mutation grid, so if you insert a new column K, address its new cells as K1, K2, ...
+  - variant values: "header" | "currency" | "multiple" | "percent" | "sector" | "warning". Omit when unsure.
 - focusCellId: cell address such as "E12" to scroll into view and highlight after confirmation. If sheetMutation is insert-row-after and focusCellId is omitted, the UI focuses the first cell of the new row (e.g. anchorRow+1 in column A).
 `,
 
@@ -67,11 +73,12 @@ JSON schema:
 Return JSON only.
 Extract readable assumptions, confidence, and abnormality level from the analysis.
 Do not replace user judgment or present the answer as guaranteed.
+confidenceScore MUST be an integer percentage on a 0-100 scale (e.g. 70 for 70% confidence). Do NOT return a 0-1 probability (e.g. 0.7).
 JSON schema:
 {
   "analysisMeta": {
     "confidenceLabel": "Low | Medium | High",
-    "confidenceScore": 0,
+    "confidenceScore": 70,
     "abnormalityLevel": "low | medium | high",
     "assumptions": ["short assumption"],
     "warningReason": "short reason for any caution"

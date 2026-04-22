@@ -18,12 +18,19 @@ export type PendingSheetMutationDto =
       anchorColumn: string;
     };
 
+export type PendingCellWriteDto = {
+  cellId: string;
+  value: string;
+  variant?: "header" | "currency" | "multiple" | "percent" | "sector" | "warning";
+};
+
 export type PendingActionDto = {
   id: string;
   label: string;
   description: string;
   impact: "visual-only" | "formula-change" | "data-change";
   sheetMutation?: PendingSheetMutationDto;
+  populateCells?: PendingCellWriteDto[];
   focusCellId?: string;
 };
 

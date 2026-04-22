@@ -13,7 +13,7 @@ import {
 } from "./data/sheetMutations";
 import { requestAssistantResponse } from "./services/assistantApi";
 import { importSpreadsheetFile } from "./services/spreadsheetImport";
-import type { AssistantMessage, AssistantSettings, PendingAction } from "./types";
+import type { AssistantMessage, AssistantSettings, PendingAction, SheetCell } from "./types";
 
 function App() {
   // Main state flow:
@@ -96,14 +96,61 @@ function App() {
   const handleConfirmAction = (action: PendingAction) => {
     let defaultFocus: string | undefined;
 
-    if (action.sheetMutation?.type === "insert-row-after") {
-      setSheetCells((current) => insertRowAfter(current, action.sheetMutation.anchorRow));
-      defaultFocus = `A${action.sheetMutation.anchorRow + 1}`;
-    } else if (action.sheetMutation?.type === "insert-column-after") {
-      setSheetCells((current) => insertColumnAfter(current, action.sheetMutation.anchorColumn));
-      const anchorIdx = columnLetterToIndex(action.sheetMutation.anchorColumn.toUpperCase());
-      defaultFocus = `${columnIndexToLetter(anchorIdx + 1)}1`;
-    }
+    setSheetCells((current) => {
+      let next = current;
+
+      if (action.sheetMutation?.type === "insert-row-after") {
+        next = insertRowAfter(next, action.sheetMutation.anchorRow);
+        defaultFocus = `A${action.sheetMutation.anchorRow + 1}`;
+      } else if (action.sheetMutation?.type === "insert-column-after") {
+        next = insertColumnAfter(next, action.sheetMutation.anchorColumn);
+        const anchorIdx = columnLetterToIndex(action.sheetMutation.anchorColumn.toUpperCase());
+        defaultFocus = `${columnIndexToLetter(anchorIdx + 1)}1`;
+      }
+
+      if (action.populateCells && action.populateCells.length > 0) {
+        const writesById = new Map(action.populateCells.map((write) => [write.cellId.toUpperCase(), write]));
+        const touched = new Set<string>();
+
+        next = next.map((cell) => {
+          const write = writesById.get(cell.id.toUpperCase());
+          if (!write) {
+            return cell;
+          }
+          touched.add(cell.id.toUpperCase());
+          return {
+            ...cell,
+            value: write.value,
+            variant: write.variant ?? cell.variant,
+          };
+        });
+
+        const newCells: SheetCell[] = [];
+        for (const write of action.populateCells) {
+          const upperId = write.cellId.toUpperCase();
+          if (touched.has(upperId)) {
+            continue;
+          }
+          const parsed = parseCellAddress(upperId);
+          if (!parsed) {
+            continue;
+          }
+          newCells.push({
+            id: upperId,
+            column: parsed.column,
+            row: parsed.row,
+            value: write.value,
+            variant: write.variant,
+          });
+        }
+
+        if (newCells.length > 0) {
+          next = [...next, ...newCells];
+        }
+      }
+
+      return next;
+    });
 
     const focusId = action.focusCellId ?? defaultFocus;
     if (focusId) {

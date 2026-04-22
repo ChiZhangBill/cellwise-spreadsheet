@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { columnLetterToIndex, sortedColumnLetters } from "../data/sheetMutations";
+import { columnIndexToLetter, columnLetterToIndex, sortedColumnLetters } from "../data/sheetMutations";
 import type { SheetCell } from "../types";
+
+type SelectionRange = {
+  anchorId: string;
+  focusId: string;
+};
+
+type SelectionBounds = {
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+};
 
 export type SpreadsheetFocusRequest = {
   cellId: string;
@@ -23,7 +35,7 @@ export function SpreadsheetGrid({
   focusRequest,
   onFocusRequestComplete,
 }: SpreadsheetGridProps) {
-  const [selectedCellId, setSelectedCellId] = useState("A1");
+  const [selectionRange, setSelectionRange] = useState<SelectionRange>({ anchorId: "A1", focusId: "A1" });
   const [formulaDraft, setFormulaDraft] = useState("");
   const [formulaError, setFormulaError] = useState<string | null>(null);
   const [flashRow, setFlashRow] = useState<number | null>(null);
@@ -31,7 +43,40 @@ export function SpreadsheetGrid({
   const formulaInputRef = useRef<HTMLInputElement>(null);
   const cellsRef = useRef(cells);
   cellsRef.current = cells;
+  const dragAnchorIdRef = useRef<string | null>(null);
+  const selectedCellId = selectionRange.focusId;
   const selectedCell = cells.find((cell) => cell.id === selectedCellId) ?? cells[0];
+  const selectionBounds = useMemo(() => getSelectionBounds(selectionRange), [selectionRange]);
+  const isRangeSelection = selectionRange.anchorId !== selectionRange.focusId;
+
+  useEffect(() => {
+    const endDrag = () => {
+      dragAnchorIdRef.current = null;
+    };
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    return () => {
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, []);
+
+  const handleCellPointerDown = (cellId: string) => {
+    dragAnchorIdRef.current = cellId;
+    setSelectionRange({ anchorId: cellId, focusId: cellId });
+  };
+
+  const handleCellPointerEnter = (cellId: string) => {
+    const anchor = dragAnchorIdRef.current;
+    if (!anchor || anchor === cellId) {
+      return;
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    window.getSelection()?.removeAllRanges();
+    setSelectionRange({ anchorId: anchor, focusId: cellId });
+  };
 
   const activeColumns = useMemo(() => sortedColumnLetters(cells), [cells]);
 
@@ -67,7 +112,7 @@ export function SpreadsheetGrid({
       return;
     }
 
-    setSelectedCellId(focusRequest.cellId);
+    setSelectionRange({ anchorId: focusRequest.cellId, focusId: focusRequest.cellId });
     const emphasizeColumn = focusRequest.highlight === "column";
     setFlashRow(emphasizeColumn ? null : match.row);
     setFlashColumn(emphasizeColumn ? match.column : null);
@@ -82,7 +127,7 @@ export function SpreadsheetGrid({
       setFlashRow(null);
       setFlashColumn(null);
       onFocusRequestComplete?.();
-    }, 2400);
+    }, 2100);
 
     return () => {
       window.clearTimeout(scrollTimer);
@@ -106,7 +151,10 @@ export function SpreadsheetGrid({
       return;
     }
 
-    setFormulaDraft(`=${templateName}(${getDefaultFormulaRange(selectedCell)})`);
+    const rangeText = isRangeSelection
+      ? selectionBoundsToAddress(selectionBounds)
+      : getDefaultFormulaRange(selectedCell);
+    setFormulaDraft(`=${templateName}(${rangeText})`);
     setFormulaError(null);
     requestAnimationFrame(() => formulaInputRef.current?.focus());
   };
@@ -148,7 +196,9 @@ export function SpreadsheetGrid({
   return (
     <div className="spreadsheet-shell">
       <div className="formula-bar" aria-label="Formula bar">
-        <span className="name-box">{selectedCell?.id ?? "A1"}</span>
+        <span className="name-box">
+          {isRangeSelection ? selectionBoundsToAddress(selectionBounds) : (selectedCell?.id ?? "A1")}
+        </span>
         <button
           className="formula-label"
           onClick={handleFormulaButtonClick}
@@ -186,7 +236,12 @@ export function SpreadsheetGrid({
       </div>
 
       <div className="grid-scroll-region">
-        <div className="spreadsheet-grid" role="grid" aria-label="Mock finance spreadsheet">
+        <div
+          className="spreadsheet-grid"
+          role="grid"
+          aria-label="Mock finance spreadsheet"
+          style={{ gridTemplateColumns: `54px repeat(${activeColumns.length}, minmax(92px, 1fr))` }}
+        >
           <div className="corner-cell" />
           {activeColumns.map((column) => (
             <div
@@ -214,25 +269,34 @@ export function SpreadsheetGrid({
                 >
                   {row}
                 </div>
-                {rowCells.map((cell) => (
-                  <div
-                    className={`sheet-cell ${cell.variant ?? ""} ${
-                      selectedCellId === cell.id ? "selected-cell" : ""
-                    } ${flashRow === row || flashColumn === cell.column ? "sheet-region-flash" : ""}`}
-                    data-cell-id={cell.id}
-                    role="gridcell"
-                    key={cell.id}
-                    aria-selected={selectedCellId === cell.id}
-                  >
-                    <input
-                      aria-label={`${cell.id} value`}
-                      onChange={(event) => onCellValueChange(cell.id, event.target.value)}
-                      onFocus={() => setSelectedCellId(cell.id)}
-                      onPointerDown={() => setSelectedCellId(cell.id)}
-                      value={cell.value}
-                    />
-                  </div>
-                ))}
+                {rowCells.map((cell) => {
+                  const inRange =
+                    isRangeSelection && isCellInSelectionBounds(cell, selectionBounds);
+                  return (
+                    <div
+                      className={`sheet-cell ${cell.variant ?? ""} ${
+                        selectedCellId === cell.id ? "selected-cell" : ""
+                      } ${inRange ? "range-selected" : ""} ${
+                        flashRow === row || flashColumn === cell.column ? "sheet-region-flash" : ""
+                      }`}
+                      data-cell-id={cell.id}
+                      role="gridcell"
+                      key={cell.id}
+                      aria-selected={selectedCellId === cell.id}
+                      onPointerDown={() => handleCellPointerDown(cell.id)}
+                      onPointerEnter={() => handleCellPointerEnter(cell.id)}
+                    >
+                      <input
+                        aria-label={`${cell.id} value`}
+                        onChange={(event) => onCellValueChange(cell.id, event.target.value)}
+                        onFocus={() =>
+                          setSelectionRange({ anchorId: cell.id, focusId: cell.id })
+                        }
+                        value={cell.value}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
@@ -338,6 +402,33 @@ function getDefaultFormulaRange(selectedCell: SheetCell) {
   const endRow = Math.max(startRow, selectedCell.row - 1);
 
   return `${selectedCell.column}${startRow}:${selectedCell.column}${endRow}`;
+}
+
+function getSelectionBounds(range: SelectionRange): SelectionBounds {
+  const anchor = parseCellId(range.anchorId);
+  const focus = parseCellId(range.focusId);
+  return {
+    minCol: Math.min(anchor.columnIndex, focus.columnIndex),
+    maxCol: Math.max(anchor.columnIndex, focus.columnIndex),
+    minRow: Math.min(anchor.row, focus.row),
+    maxRow: Math.max(anchor.row, focus.row),
+  };
+}
+
+function isCellInSelectionBounds(cell: SheetCell, bounds: SelectionBounds): boolean {
+  const colIdx = columnLetterToIndex(cell.column);
+  return (
+    colIdx >= bounds.minCol &&
+    colIdx <= bounds.maxCol &&
+    cell.row >= bounds.minRow &&
+    cell.row <= bounds.maxRow
+  );
+}
+
+function selectionBoundsToAddress(bounds: SelectionBounds): string {
+  const topLeft = `${columnIndexToLetter(bounds.minCol)}${bounds.minRow}`;
+  const bottomRight = `${columnIndexToLetter(bounds.maxCol)}${bounds.maxRow}`;
+  return `${topLeft}:${bottomRight}`;
 }
 
 function getRangeValues(startCellId: string, endCellId: string, cells: SheetCell[]) {

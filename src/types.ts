@@ -14,6 +14,12 @@ export type PendingSheetMutation =
       anchorColumn: string;
     };
 
+export type PendingCellWrite = {
+  cellId: string;
+  value: string;
+  variant?: SheetCell["variant"];
+};
+
 export type PendingAction = {
   id: string;
   label: string;
@@ -21,6 +27,8 @@ export type PendingAction = {
   impact: "visual-only" | "formula-change" | "data-change";
   /** When the user confirms, apply this structural change to the sheet. */
   sheetMutation?: PendingSheetMutation;
+  /** Cell values to write after any structural mutation. Applied in order. */
+  populateCells?: PendingCellWrite[];
   /** After confirm (and optional mutation), scroll to this cell and highlight the row. */
   focusCellId?: string;
 };

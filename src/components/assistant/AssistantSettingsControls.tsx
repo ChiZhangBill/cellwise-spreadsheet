@@ -57,7 +57,7 @@ export function AssistantSettingsControls({
             onChange={() => handleToggleSetting("confidenceDisplay")}
           />
           <ToggleRow
-            checked={settings.showAiActions}
+            checked={!settings.showAiActions}
             label="Ignore AI action"
             onChange={() => handleToggleSetting("showAiActions")}
           />

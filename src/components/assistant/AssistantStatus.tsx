@@ -5,6 +5,7 @@ type AssistantStatusProps = {
   isThinking: boolean;
   messageCount: number;
   onRetry: () => void;
+  onStop: () => void;
 };
 
 const thinkingSteps = [
@@ -14,7 +15,7 @@ const thinkingSteps = [
   "Preparing warning flags and confidence notes",
 ];
 
-export function AssistantStatus({ errorMessage, isThinking, messageCount, onRetry }: AssistantStatusProps) {
+export function AssistantStatus({ errorMessage, isThinking, messageCount, onRetry, onStop }: AssistantStatusProps) {
   const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
 
   useEffect(() => {
@@ -47,6 +48,9 @@ export function AssistantStatus({ errorMessage, isThinking, messageCount, onRetr
       <div className="message-card assistant loading-card">
         <span className="message-label">Assistant</span>
         <p>{thinkingSteps[thinkingStepIndex]}</p>
+        <button className="assistant-stop-button" onClick={onStop} type="button">
+          Stop
+        </button>
       </div>
     );
   }

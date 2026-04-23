@@ -987,6 +987,25 @@ h2 {
   gap: 8px;
 }
 
+.assistant-stop-button {
+  justify-self: start;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5a29a;
+  background: #fff4f2;
+  color: #7d352b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.assistant-stop-button:hover:not(:disabled) {
+  border-color: #c9655a;
+  color: #8a2d21;
+  background: #ffe6e0;
+  box-shadow: 0 2px 8px rgba(125, 53, 43, 0.12);
+}
+
 .loading-card p::after {
   display: inline-block;
   width: 28px;

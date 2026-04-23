@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SpreadsheetGrid, type SpreadsheetFocusRequest } from "./components/SpreadsheetGrid";
 import { RightAssistantPanel } from "./components/RightAssistantPanel";
 import { TopHeader } from "./components/TopHeader";
@@ -30,6 +30,7 @@ function App() {
   const [sheetCells, setSheetCells] = useState(() => createMockSheet());
   const [settings, setSettings] = useState<AssistantSettings>(defaultAssistantSettings);
   const [spreadsheetFocus, setSpreadsheetFocus] = useState<SpreadsheetFocusRequest | null>(null);
+  const assistantAbortControllerRef = useRef<AbortController | null>(null);
 
   const handlePromptSubmit = async (prompt: string) => {
     const assistantMessageId = crypto.randomUUID();
@@ -40,16 +41,26 @@ function App() {
       text: prompt,
     };
 
+    assistantAbortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    assistantAbortControllerRef.current = abortController;
+    const { signal } = abortController;
+
     setMessages((current) => [...current, userMessage]);
     setLastPrompt(prompt);
     setIsAssistantThinking(true);
     setAssistantError(undefined);
 
     try {
-      const assistantMessage = await requestAssistantResponse(prompt, {
-        anomalyDetection: settings.anomalyDetection,
-        confidenceDisplay: settings.confidenceDisplay,
-      }, sheetCells);
+      const assistantMessage = await requestAssistantResponse(
+        prompt,
+        {
+          anomalyDetection: settings.anomalyDetection,
+          confidenceDisplay: settings.confidenceDisplay,
+        },
+        sheetCells,
+        signal,
+      );
 
       const streamingMessage: AssistantMessage = {
         id: assistantMessageId,
@@ -60,18 +71,22 @@ function App() {
       };
 
       setMessages((current) => [...current, streamingMessage]);
-      await streamAssistantText(assistantMessage.text, (nextText) => {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === assistantMessageId
-              ? {
-                  ...message,
-                  text: nextText,
-                }
-              : message,
-          ),
-        );
-      });
+      await streamAssistantText(
+        assistantMessage.text,
+        (nextText) => {
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    text: nextText,
+                  }
+                : message,
+            ),
+          );
+        },
+        signal,
+      );
 
       setMessages((current) =>
         current.map((message) =>
@@ -84,13 +99,48 @@ function App() {
             : message,
         ),
       );
-    } catch {
-      setAssistantError(
-        "The assistant API could not complete this analysis. Your sheet and previous results were left unchanged.",
-      );
+    } catch (error) {
+      if (isAbortError(error)) {
+        setMessages((current) => {
+          const hasStreamingMessage = current.some((message) => message.id === assistantMessageId);
+          if (hasStreamingMessage) {
+            return current.map((message) =>
+              message.id === assistantMessageId
+                ? {
+                    ...message,
+                    text: message.text
+                      ? `${message.text}\n\n[Stopped by user]`
+                      : "[Stopped by user]",
+                    isStreaming: false,
+                  }
+                : message,
+            );
+          }
+          return [
+            ...current,
+            {
+              id: assistantMessageId,
+              role: "assistant",
+              kind: "plain",
+              text: "[Stopped by user]",
+            },
+          ];
+        });
+      } else {
+        setAssistantError(
+          "The assistant API could not complete this analysis. Your sheet and previous results were left unchanged.",
+        );
+      }
     } finally {
+      if (assistantAbortControllerRef.current === abortController) {
+        assistantAbortControllerRef.current = null;
+      }
       setIsAssistantThinking(false);
     }
+  };
+
+  const handleStopAssistant = () => {
+    assistantAbortControllerRef.current?.abort();
   };
 
   const handleConfirmAction = (action: PendingAction) => {
@@ -281,6 +331,7 @@ function App() {
           onConfirmAction={handleConfirmAction}
           onIgnoreAction={handleIgnoreAction}
           onSettingsChange={handleSettingsChange}
+          onStopAssistant={handleStopAssistant}
           onSubmitPrompt={handlePromptSubmit}
           settings={settings}
         />
@@ -289,19 +340,50 @@ function App() {
   );
 }
 
-async function streamAssistantText(text: string, onUpdate: (nextText: string) => void) {
+async function streamAssistantText(
+  text: string,
+  onUpdate: (nextText: string) => void,
+  signal?: AbortSignal,
+) {
   const chunks = text.match(/\S+\s*/g) ?? [text];
   let streamedText = "";
 
   for (const chunk of chunks) {
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
     streamedText += chunk;
     onUpdate(streamedText);
-    await wait(26);
+    await wait(26, signal);
   }
 }
 
-function wait(durationMs: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, durationMs));
+function wait(durationMs: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, durationMs);
+    const onAbort = () => {
+      window.clearTimeout(timeoutId);
+      reject(createAbortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function createAbortError() {
+  return new DOMException("Aborted", "AbortError");
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === "AbortError"
+  ) || (error instanceof Error && error.name === "AbortError");
 }
 
 export default App;

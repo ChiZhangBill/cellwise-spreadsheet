@@ -14,6 +14,7 @@ type RightAssistantPanelProps = {
   onIgnoreAction: (action: PendingAction) => void;
   onRetry: () => void;
   onSettingsChange: (settings: AssistantSettings) => void;
+  onStopAssistant: () => void;
   onSubmitPrompt: (prompt: string) => void;
   settings: AssistantSettings;
 };
@@ -27,6 +28,7 @@ export function RightAssistantPanel({
   onIgnoreAction,
   onRetry,
   onSettingsChange,
+  onStopAssistant,
   onSubmitPrompt,
   settings,
 }: RightAssistantPanelProps) {
@@ -66,6 +68,7 @@ export function RightAssistantPanel({
           isThinking={isThinking}
           messageCount={messages.length}
           onRetry={onRetry}
+          onStop={onStopAssistant}
         />
       </div>
 

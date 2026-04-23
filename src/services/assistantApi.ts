@@ -34,26 +34,39 @@ export async function requestAssistantResponse(
   prompt: string,
   options: RequestAssistantOptions,
   sheetCells: SheetCell[],
+  signal?: AbortSignal,
 ): Promise<AssistantMessage> {
   const sheet = createSheetSnapshot(sheetCells);
-  const analysis = await postJson<FinancialAnalysisResponse>("/api/financial-analysis", {
-    prompt,
-    sheet,
-  });
+  const analysis = await postJson<FinancialAnalysisResponse>(
+    "/api/financial-analysis",
+    {
+      prompt,
+      sheet,
+    },
+    signal,
+  );
 
   const [anomalyResult, assumptionResult] = await Promise.all([
     options.anomalyDetection
-      ? postJson<AnomalyCheckResponse>("/api/anomaly-check", {
-          analysisText: analysis.text,
-          prompt,
-          sheet,
-        }).then((result) => normalizeAnomalyFlags(result.anomalyFlags, analysis.text))
+      ? postJson<AnomalyCheckResponse>(
+          "/api/anomaly-check",
+          {
+            analysisText: analysis.text,
+            prompt,
+            sheet,
+          },
+          signal,
+        ).then((result) => normalizeAnomalyFlags(result.anomalyFlags, analysis.text))
       : Promise.resolve<AnomalyFlag[] | undefined>(undefined),
     options.confidenceDisplay
-      ? postJson<AssumptionExtractionResponse>("/api/extract-assumptions", {
-          analysisText: analysis.text,
-          prompt,
-        })
+      ? postJson<AssumptionExtractionResponse>(
+          "/api/extract-assumptions",
+          {
+            analysisText: analysis.text,
+            prompt,
+          },
+          signal,
+        )
       : Promise.resolve<AssumptionExtractionResponse | undefined>(undefined),
   ]);
 
@@ -88,13 +101,14 @@ function isHealthcareCompsAction(action: PendingAction) {
   return combinedText.includes("healthcare") && (combinedText.includes("comp") || combinedText.includes("company"));
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
+async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   const data = await response.json().catch(() => undefined);

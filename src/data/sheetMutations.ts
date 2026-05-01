@@ -4,17 +4,27 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export function columnLetterToIndex(letter: string): number {
   const upper = letter.toUpperCase();
-  if (upper.length !== 1) {
-    return LETTERS.indexOf(upper[0] ?? "A");
+  if (!/^[A-Z]+$/.test(upper)) {
+    return -1;
   }
-  return LETTERS.indexOf(upper);
+  let index = 0;
+  for (const char of upper) {
+    index = index * 26 + (LETTERS.indexOf(char) + 1);
+  }
+  return index - 1;
 }
 
 export function columnIndexToLetter(index: number): string {
-  if (index < 0 || index >= LETTERS.length) {
+  if (index < 0) {
     return "A";
   }
-  return LETTERS[index] ?? "A";
+  let result = "";
+  let n = index;
+  while (n >= 0) {
+    result = LETTERS[n % 26] + result;
+    n = Math.floor(n / 26) - 1;
+  }
+  return result;
 }
 
 export function parseCellAddress(cellId: string): { column: string; row: number } | null {
@@ -28,7 +38,7 @@ export function parseCellAddress(cellId: string): { column: string; row: number 
 export function sortedColumnLetters(cells: SheetCell[]): string[] {
   const maxIndex = cells.reduce((max, cell) => Math.max(max, columnLetterToIndex(cell.column)), -1);
   const count = Math.max(10, maxIndex + 1);
-  return Array.from({ length: count }, (_, index) => LETTERS[index] ?? "A");
+  return Array.from({ length: count }, (_, index) => columnIndexToLetter(index));
 }
 
 function maxRowFromCells(cells: SheetCell[]): number {

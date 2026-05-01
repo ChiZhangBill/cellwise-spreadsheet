@@ -18,17 +18,15 @@ export async function importSpreadsheetFile(file: File): Promise<SpreadsheetImpo
   }
 
   const rows = extension === ".csv" ? await readCsvRows(file) : await readWorkbookRows(file);
-  // Keep first 10 columns, but allow all rows
-  const trimmedRows = rows.map((row) => row.slice(0, 10));
 
-  if (trimmedRows.length === 0 || trimmedRows.every((row) => row.every((value) => !value))) {
+  if (rows.length === 0 || rows.every((row) => row.every((value) => !value))) {
     throw new Error("The selected spreadsheet did not contain readable values.");
   }
 
   return {
-    cells: createSheetFromRows(trimmedRows),
+    cells: createSheetFromRows(rows),
     fileName,
-    rowCount: trimmedRows.length,
+    rowCount: rows.length,
   };
 }
 

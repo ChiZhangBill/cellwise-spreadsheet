@@ -10,7 +10,7 @@ export type PendingSheetMutation =
     }
   | {
       type: "insert-column-after";
-      /** A new empty column is inserted immediately to the right of this column (A–J). */
+      /** A new empty column is inserted immediately to the right of this column (Excel-style letter, e.g. A, B, ..., Z, AA, AB, ...). */
       anchorColumn: string;
     };
 

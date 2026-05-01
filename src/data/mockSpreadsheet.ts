@@ -1,6 +1,7 @@
 import type { SheetCell } from "../types";
+import { columnIndexToLetter } from "./sheetMutations";
 
-const columns = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+const MIN_VISIBLE_COLUMNS = 10;
 
 const mockRows: string[][] = [
   ["Company", "Sector", "Revenue", "YoY Growth", "EBITDA", "EBITDA Margin", "EV", "EV/EBITDA", "Rule of 40", "Signal"],
@@ -39,15 +40,18 @@ function inferCellVariant(value: string, row: number, columnIndex: number): Shee
 }
 
 export function createSheetFromRows(rows: string[][]): SheetCell[] {
-  // Calculate the number of rows needed: data rows + 10 extra rows for user input
   const dataRows = rows.length;
   const extraRows = 10;
   const totalRows = dataRows + extraRows;
 
+  const dataColumnCount = rows.reduce((max, row) => Math.max(max, row.length), 0);
+  const totalColumns = Math.max(MIN_VISIBLE_COLUMNS, dataColumnCount);
+
   return Array.from({ length: totalRows }).flatMap((_, rowIndex) => {
     const row = rowIndex + 1;
 
-    return columns.map((column, columnIndex) => {
+    return Array.from({ length: totalColumns }, (_, columnIndex) => {
+      const column = columnIndexToLetter(columnIndex);
       const value = rows[rowIndex]?.[columnIndex] ?? "";
 
       return {
@@ -64,5 +68,3 @@ export function createSheetFromRows(rows: string[][]): SheetCell[] {
 export function createMockSheet(): SheetCell[] {
   return createSheetFromRows(mockRows);
 }
-
-export const sheetColumns = columns;

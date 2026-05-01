@@ -29,7 +29,7 @@ Root object must include only "text" and optionally "pendingAction". pendingActi
 Optional fields on pendingAction (omit when not needed):
 - sheetMutation: include only when the confirmed action should insert a row or column.
   - insert-row-after: anchorRow is the 1-based row after which a new row appears.
-  - insert-column-after: anchorColumn is a single letter A–J; a new column is inserted immediately to its right (may add column K if inserting after J).
+  - insert-column-after: anchorColumn is an Excel-style column letter (A, B, ..., Z, AA, AB, ...); a new column is inserted immediately to its right. The grid expands as needed; do not assume any fixed column-count limit.
 - populateCells: values to write after the structural mutation (or into the existing sheet when no mutation is specified). Each entry is { cellId, value, optional variant }. Use this whenever the action implies filling cells with computed values (e.g. adding an EV/EBITDA column with values for each company row). Cell ids reference the post-mutation grid, so if you insert a new column K, address its new cells as K1, K2, ...
   - variant values: "header" | "currency" | "multiple" | "percent" | "sector" | "warning". Omit when unsure.
 - focusCellId: cell address such as "E12" to scroll into view and highlight after confirmation. If sheetMutation is insert-row-after and focusCellId is omitted, the UI focuses the first cell of the new row (e.g. anchorRow+1 in column A).

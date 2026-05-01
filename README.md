@@ -139,7 +139,7 @@ src/
 ## Spreadsheet Import
 
 - Click `Insert` in the top toolbar to upload a local `.csv`, `.xlsx`, or `.xls` file.
-- Imported data is loaded into the visible 10-column by 20-row grid.
+- Imported data is loaded in full; the grid expands to fit however many columns the file contains, with at least 10 columns and 20 rows kept visible.
 - Excel parsing is loaded on demand so the main app bundle stays lighter.
 - Click `Clear` to remove all visible cell contents after an explicit browser confirmation.
 
